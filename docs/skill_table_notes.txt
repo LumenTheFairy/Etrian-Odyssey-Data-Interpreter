@@ -1,0 +1,50 @@
+Skill tables in EO store all of the information associated with a set of skills.
+
+The size of a skill's information is fixed, so the file itself is just the list of skills
+without any header or index information.
+
+The data for a single skill has two parts, a header and a list of level data.
+The header contains information for the type, usage, target, effects, etc. for a skill.
+The level data has a set of parameters to the skill that may change as level increases
+(for example, how much damage it does, how accurate it is, etc.)
+
+There are a fixed number of rows to the level data, and a fixed number of levels, but these vary by game.
+For example, EO3 has 8 rows with 10 levels each, whereas EOU has 10 rows with 15 levels each (to account for boost.)
+Let these be lv_rows and num_lvs respectively.
+
+Skill_Data:
+name         type                      offset   size
+header       Skill_Data_Header         0x0      0x18 = 24 bytes
+level data   Level_Data_Row[lv_rows]   0x18     2 * lv_rows * (num_lvs+1) bytes
+
+Skill_Data_Header:
+name                 type      offset   size (bytes)   description
+ukn1                 ?         0x00     1              ?
+skill_type           u8        0x01     1              The broad type of the skill
+usage_requirements   bit[16]   0x02     2              The body part and/or weapon required to use the skill
+unk2                 ?         0x04     2              ?
+target_type          u8        0x06     1              How this skill targets (single, all, line, etc.)
+target_team          u8        0x07     1              Which team this skill targets (i.e. friend, foe, both)
+unk3                 ?         0x08     1              ?
+buff_kind            u8        0x09     1              Subtype for buff skills (buff, debuff, clearing, etc.)
+buff_type            u16       0x0A     2              Which stat or stats a buff affects
+buff_damage_type     bit[16]   0x0C     2              Which damage types are affected by a buff
+damage_type          bit[16]   0x0E     2              The damage types of an attack skill
+ailment_skill_type   u16       0x10     2              Subtype for ailment skills (i.e. none, cause, heal)
+possible_ailments    bit[16]   0x12     2              Which ailments can be affected
+unk4                 ?         0x14     4              ?
+
+Level_Data_Row
+name     type           offset   size (bytes)   description
+tag      u16            0x00     4              Tag saying what the values in this row affect
+values   u16[num_lvs]   0x02     num_lvs        The values for each level, increasing up from level 1
+
+The meaning of a value in any header field, or tag in a level data row, mostly differs by game.
+A very incomplete list can be found in dictionairies in `eo_value_lookup.py`.
+(I believe other's have more complete understanding of the header fields and value meanings;
+I haven't spent a ton of time on this structure.)
+
+
+You can convert an EO name table to a readable tsv with `unpack_EO_skill_table.py`. To run, see:
+$   ./unpack_EO_skill_table.py -h
+for its usage.

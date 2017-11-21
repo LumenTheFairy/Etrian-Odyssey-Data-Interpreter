@@ -1,0 +1,7 @@
+Some things to bare in mind if you are reading through this documentation.
+
+-I have only looked into EO3 and EOU myself. As such, exact sizes and use of various parts of files may change
+ in other games. The meaning of values for these parts is almost certainly different in most cases.
+-The names for parts of the data I have named myself or borrowed from others. They shouldn't be considered official,
+ and may not match different names you've heard or used elsewhere.
+-I am a notoriously poor speller. I'll just apologize for all of the typos there are sure to be.

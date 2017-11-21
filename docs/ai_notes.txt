@@ -1,0 +1,89 @@
+The BF/FLW0 format is broken down here: https://amicitia.miraheze.org/wiki/BF
+
+An additional note: The unknown count mentioned on this page (offset 0x14 in the header)
+tells the game how much space to allocate for storage indices, that is, the indices used
+in the PUSHLIX and POPLIX like instructions. These storage spaces are initialized to 0,
+and are not shared between entities. They do persist across turns. The first padding byte
+seems to be 0x02 if any wide instructions are used.
+
+As a note specific to EO3, in the enemey AI, certain codes help classify the AI:
+"scr": enemy AI
+"scrn": sea battle ally AI (n for NPC)
+"scrb": Wilding's summoned beast AI (b for beast)
+
+
+I have not fully explored the native functions, but a list of those I have some ideas
+about are in eo_value_lookup.py in the native_functions map. The top of the list has
+functions I've tested quite thoroughly, the middle has ones I'm pretty sure of based
+on the context in which they are used, and the bottom has ones I at least know how many
+arguments they take. I have not, however, actually dug into the game's code to find the
+native functions, so any of these could be inaccurate. In the decompilation, functions
+I am less certain about are prefixed with an underscore.
+
+During decompilation, it is important to know exactly how many arguments a function takes
+(and thus how many values it pops off of the stack.) As just mentioned, I don't have
+this information for every single native function, so I run a greedy guessing algorithm
+to fill in the gaps. This is not always correct (and can do some stupid things like give
+the same function different numbers of arguments at times,) but it at least ensures that
+the number of pushes and pops in a basic block are equal. What this means is that
+expressions containing unknown native functions may be incorrect. Similarly, I assume that
+procedures do not take parameters or return values. If they do, the decompilation process
+will fail.
+
+
+
+You can simply disassemble an AI file with `unpack_ai.py`. To run, see:
+$   ./unpack_ai -h
+for its usage.
+
+In disassembly, dead code elimination is a pass that removes instructions that are impossible
+to actually reach and run. If you notice missing lines in the disassembly, this is why. If
+you want to see every single instruction, you can pass the --no_dce flag.
+
+
+
+You can decompile an AI file with `decompile_ai.py`. To run, see:
+$   ./decompile_ai -h
+for its usage.
+
+The decompiler can run a few optimization passes on the code to make it easier to read. These
+change the actual code in such a way that ensures it means the same thing. In other words,
+given a certain game state, the optimized code will still arrive at the same result, even
+though it may have taken slightly different (usually fewer) steps to get there. The following
+is a list of the optimizations that can be performed.
+
+flatten_conditionals:
+Without this optimization, conditionals can only have two branches. Enabling the optimization
+allows for (if ... elif ... elif ... else ...) like constructs. It will convert conditionals
+to this form as much as possible. This reduces the nesting, and thus the amount of indentation,
+in the resulting code. Usually recommended.
+
+flatten_elses:
+Further flattens conditionals of the form (if t return else f) into (if t return f), removing the
+else and unindending its block. While this does remove indentation and is still effectively the
+same code, it can occationally make it harder to quickly see which blocks are the result of which
+conditions (this is really just a stylistic preference.) It is also worth noting that running this
+optimization without flatten_conditionals is equivalent to running it with flatten_conditionals,
+except that all elifs will just be ifs. Recommended if you prefer this style.
+
+constant_folding:
+Constant folding is the process of taking care of any operations that don't require run-time 
+game state information to perform. For example, something like (((13 + 0) + 1) + 7) will be
+replaced with just 21. Some of the AI files contain some pretty rediculous expressions that
+can be evaluated during decompilation, and this makes them much easier to read. However,
+seeing the expression as-is can sometimes be somewhat revealing of how the script was originally
+writen. Usually recommended.
+
+simplify_conditions:
+In some cases, boolean expressions can safely be reduced if we know both sides are always 0/1
+values. For example, if bexp is a boolean expression (like a function that always returns
+0 or 1, or a comparison operation,) the expression (bexp & 1) can be reduced to just (bexp).
+More commonly, (bexp == 0) can be reduced to (!bexp). This isn't being done yet, but boolean
+nots can also be pushed down in some cases, such as converting (!(x < y)) to (x >= y). This
+helps clean up the sometimes quite lengthy conditions. However, it's worth noting that having
+something like (bexp & 0) reduces to just 0, hiding what was in (bexp). As with constant folding,
+seeing the original expression can be interesting, but more importantly in this case, if the
+expression is incorrect (because native function argument counts were guessed incorrectly,) the
+incorrect unknown function is hidden away, and you can't tell if it was a legitamite reduction or
+not. Thus, this optimization is only recommended for very simple scrips, or scripts in which the
+native functions are known, or at least have accurate argument counts.
