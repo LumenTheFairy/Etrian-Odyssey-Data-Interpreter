@@ -26,3 +26,12 @@ def string_to_flag_list(s):
 # https://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
 def flatten(l):
     return [item for sublist in l for item in sublist]
+
+# used to wrap a file read so that it works in python 2 and 3
+import sys
+if sys.version_info < (3,):
+    def d(x):
+        return x
+else:
+    def d(x):
+        return "".join(map(chr, x))

@@ -133,7 +133,7 @@ def eostring_to_string(eostring, alert_unk=False):
         if c in ["[Color]", "[Item]", "[Enemy]", "[Number Display]", "[Party Member]"]:
             i += 1
             code = eostring[2*i : 2*i+2]
-            c = c[:-1] + " " + str( unpack("<H", code)[0] ) + "]"
+            c = c[:-1] + " " + str( unpack("<H", code.encode())[0] ) + "]"
         result += c
         i += 1
 

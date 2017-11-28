@@ -9,6 +9,7 @@ import argparse
 from struct import unpack
 import convert_EOstring
 from sys import stderr
+from shared_helpers import d
 
 def eprint(s):
     stderr.write(s + "\n")
@@ -90,9 +91,10 @@ class EO_MSG_table:
         # name table is after the position table
         for index in range(0, self.size):
             pos = self.positions[index]
-            eostring = ""
-            for char in range(self.sizes[index]):
-                eostring += data[pos + char]
+            size = self.sizes[index]
+            eostring = d(data[pos:pos+size])
+            #for char in range(self.sizes[index]):
+            #    eostring += str(chr(data[pos + char]))
             self.raw_names.append(eostring)
             self.names.append( convert_EOstring.eostring_to_string(eostring, alert_unk) )
 
@@ -100,7 +102,7 @@ class EO_MSG_table:
     # Popluate the table using a given file
     def build_from_file(self, tblfile, alert_unk):
         data = ""
-        with open(tblfile) as f:
+        with open(tblfile, "rb") as f:
             data = f.read()
         self.build_from_data(data, alert_unk)
 
@@ -132,7 +134,7 @@ if __name__ == '__main__':
     output = "\n".join(lines)
 
     if args.show_output:
-        print output
+        print(output)
 
     # Write result to a file
     with open(args.output_file, "w") as f:

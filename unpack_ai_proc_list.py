@@ -7,6 +7,7 @@
 # written by TheOnlyOne (@modest_ralts)
 
 import argparse
+from shared_helpers import d
 
 def parseArguments():
     # Create argument parser
@@ -33,8 +34,8 @@ def get_procedure_names(filename, num_names):
 
     # read the file
     data = ""
-    with open(filename) as f:
-        data = f.read()
+    with open(filename, "rb") as f:
+        data = d(f.read())
 
     # get the strings
     proc_names = []
@@ -68,7 +69,7 @@ def unpack_proc_main():
     output = "\n".join(lines)
 
     if args.show_output:
-        print output
+        print(output)
 
     # Write result to a file
     with open(args.output_file, "w") as f:

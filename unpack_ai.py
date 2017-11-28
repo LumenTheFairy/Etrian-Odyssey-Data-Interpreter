@@ -68,7 +68,7 @@ class Flow_Header():
                 "tag" : 0x30574C46,
                 "num_sections" : 5,
             }
-            for name, val in expected.iteritems():
+            for name, val in expected.items():
                 our_val = self.__dict__[name]
                 if our_val != val:
                     eprint( name + " is not " + "{:#04x}".format(val) + "! It is: " + "{:#04x}".format(our_val) )
@@ -261,7 +261,7 @@ class Flow_Block():
         self.start = label.loc
         self.label_index = label.index
         self.label_kind = label.kind
-        self.instructions = filter(lambda i : i is not None, instructions)
+        self.instructions = list(filter(lambda i : i is not None, instructions))
         self.procedure_id = procedure_id
 
         # guess special labels based on their name
@@ -360,7 +360,7 @@ class Flow_File():
     def __init__(self, filename):
         #read the file
         data = ""
-        with open(filename) as f:
+        with open(filename, "rb") as f:
             data = f.read()
         
         # get the file's header
@@ -417,8 +417,8 @@ class Flow_File():
             # Section 4: Expected to be 0 padding
             sec = self.sections[4]
             for pad in sec.entries:
-                if pad != '\x00':
-                    eprint("Section 4 has non-zero padding: " + pad)
+                if pad != b'\x00':
+                    eprint("Section 4 has non-zero padding: " + str(pad))
 
         
         # break the instructions up into flow blocks using the given labels
@@ -426,7 +426,7 @@ class Flow_File():
         def get_loc(label):
             return label.loc
         all_labels.sort(key=get_loc)
-        end_points = ( map(get_loc, all_labels[1:]) + [len(self.instructions)] )
+        end_points = ( list(map(get_loc, all_labels[1:])) + [len(self.instructions)] )
         self.flow_blocks = [[] for _ in self.proc_labels]
         cur_procedure = -1
         next_labels = all_labels[1:] + [None]
@@ -466,7 +466,7 @@ def unpack_ai_main():
     output += flow.display_disassembly()
 
     if args.show_output:
-        print output
+        print(output)
 
     # Write result to a file
     with open(args.output_file, "w") as f:

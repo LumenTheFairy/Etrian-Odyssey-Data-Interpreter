@@ -10,6 +10,7 @@
 import argparse
 from struct import unpack
 import convert_EOstring
+from shared_helpers import d
 
 def parseArguments():
     # Create argument parser
@@ -66,6 +67,8 @@ class EO_name_table:
         for index in range(0, self.size):
             self.positions.append( data_val(data_slice(width*index + position_table_base)) )
 
+        data = d(data)
+
         # read the names
         # name table is after the position table
         name_table_base = width * (self.size + 1)
@@ -84,7 +87,7 @@ class EO_name_table:
     # Popluate the table using a given file
     def build_from_file(self, tblfile, width, alert_unk):
         data = ""
-        with open(tblfile) as f:
+        with open(tblfile, "rb") as f:
             data = f.read()
         self.build_from_data(data, width, alert_unk)
 
@@ -125,7 +128,7 @@ if __name__ == '__main__':
         output += "\t".join(row_data) + "\n"
 
     if args.show_output:
-        print output
+        print(output)
 
     # Write result to a file
     with open(args.output_file, "w") as f:

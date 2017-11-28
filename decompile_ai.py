@@ -325,7 +325,7 @@ class Control_Flow_Graph():
   def build_loops(self):
     self.loops = []
     # every back edge signifies a loop (if the graph is sufficiently well behaved)
-    for (u, v), label in self.edge_labels.iteritems():
+    for (u, v), label in self.edge_labels.items():
       if label == "back":
         entry_block = v
         continue_block = u
@@ -825,7 +825,7 @@ class ABST():
       if len(blocks) == 1:
         return blocks[0]
       # compute lca of pairs in the list
-      lcas = map( lambda (x,y) : lca2(x,y), zip(blocks[0::2], blocks[1::2]) )
+      lcas = list(map( lambda p : lca2(p[0],p[1]), zip(blocks[0::2], blocks[1::2]) ))
       # add in the odd element if there is one
       if len(blocks) % 2 == 1:
         lcas.append(blocks[-1])
@@ -914,9 +914,9 @@ class ABST():
         return "func_" + "{:#06x}".format(index)
 
     def display_func_or_send(node):
-      function_params = map( compose(display_exp_node, in_node), node.children)
+      function_params = list(map( compose(display_exp_node, in_node), node.children))
       if func_display is not None:
-        formated_name = func_display(node.vals[0], map( in_node, node.children ), function_params )
+        formated_name = func_display(node.vals[0], list(map( in_node, node.children )), function_params )
         if formated_name[0]:
           return formated_name[1]
       function_name = display_native_name(node.vals[0])
@@ -1604,7 +1604,7 @@ def get_enemy_function_formater(tree, enemy_names, skill_names):
     elif name == "set_action_defend":
       return ( True, "Defend." )
     elif name == "set_action_leveled_skill":
-      lits = map(check_lit, params )
+      lits = list(map(check_lit, params ))
       if lits[0][0] and lits[1][0]:
         skill = skill_names[ lits[0][1] ]
         level = lits[1][1]
@@ -1680,7 +1680,7 @@ def decompile_ai_main():
   output += tree.display_decompilation() + "\n\n"
 
   if args.show_output:
-    print output
+    print(output)
 
   # Write result to a file
   with open(args.output_file, "w") as f:
