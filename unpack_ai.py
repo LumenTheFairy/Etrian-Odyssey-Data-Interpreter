@@ -193,7 +193,7 @@ class Flow_Instruction():
             opcode_str = opcode_str[6:8] + opcode_str[4:6] + " " + opcode_str[2:4] + opcode_str[0:2]
             operand_str = ""
             if self.floating:
-                f_str = pack("<f", self.operand)
+                f_str = d(pack("<f", self.operand))
                 operand_str = "{:08x}".format( unpack("<i", f_str)[0] )
                 operand_name = str(self.operand)
             else:
@@ -279,7 +279,7 @@ class Flow_Block():
             if next_label is None:
                 if show_alerts:
                     eprint("Final block does not end in an IF, JUMP, GOTO, or END, or is empty.")
-            instr_data = '\x0d\x00' + pack("<H", next_label.index)
+            instr_data = b('\x0d\x00') + pack("<H", next_label.index)
             goto_instr = Flow_Instruction(instr_data, -1)
             self.instructions.append(goto_instr)
 

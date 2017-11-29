@@ -32,6 +32,11 @@ import sys
 if sys.version_info < (3,):
     def d(x):
         return x
+    def b(x):
+        return x
 else:
     def d(x):
         return "".join(map(chr, x))
+    import codecs
+    def b(x):
+        return x.encode('ISO-8859-1')

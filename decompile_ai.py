@@ -342,7 +342,7 @@ class Control_Flow_Graph():
         if entry_block not in self.post_dominators[continue_block]:
           eprint("Entry block is not post-dominated by the continue block.")
         # the break block is the child that is not on the path to the continue block
-        filtered_children = filter(lambda c : c not in self.dfs_paths[continue_block], self.succs[entry_block])
+        filtered_children = list(filter(lambda c : c not in self.dfs_paths[continue_block], self.succs[entry_block]))
         if len(filtered_children) != 1:
           eprint("Continue block is reached from " + str(len(filtered_childre)) + " children.")
         [break_block] = filtered_children
@@ -988,7 +988,7 @@ class ABST():
       # loop stmt
       elif node.tag == "loop":
         cond_str = display_exp_node( in_node(node.children[0]) )
-        branch_strs = map( compose(display_stmt_node, b_node), node.vals )
+        branch_strs = list(map( compose(display_stmt_node, b_node), node.vals ))
         inner_str = indent( branch_strs[0] )
         top_line = ""
         if len(node.vals) == 3:
