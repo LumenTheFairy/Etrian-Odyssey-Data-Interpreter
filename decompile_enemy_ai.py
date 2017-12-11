@@ -34,6 +34,7 @@ def parseArguments():
     parser.add_argument("--flatten_elses", action="store_true", help="(if t return else f ) will be converted to (if t return f) when permissable to reduce the nesting depth and resulting indentation of code")
     parser.add_argument("--constant_folding", action="store_true", help="any arithmetic containing only constants will be replaced with the value of that expression")
     parser.add_argument("--simplify_conditions", action="store_true", help="boolean conditions will be simplified when it is permissable; see docs/ai_notes.txt for some warnings about this flag")
+    parser.add_argument("--handwritten", action="store_true", help="use this for handwritten scripts if they don't seem to decompile well without it; see docs/ai_notes.txt for more details")
 
     # Print version
     parser.add_argument("--version", action="version", version='%(prog)s - Version 1.0')
@@ -57,7 +58,7 @@ if __name__ == '__main__':
     decompile_ai.set_game_specific_values(args.game)
     flow = unpack_ai.Flow_File(args.input_file)
     basic_blocks, proc_info, special_labels = decompile_ai.abstract_flow(flow)
-    abst = decompile_ai.ABST(basic_blocks, proc_info, special_labels)
+    abst = decompile_ai.ABST(basic_blocks, proc_info, special_labels, args.handwritten)
     if args.fully_optimize:
         abst.optimize_abst()
     else:

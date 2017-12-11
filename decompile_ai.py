@@ -41,6 +41,7 @@ def parseArguments():
   parser.add_argument("--flatten_elses", action="store_true", help="(if t return else f ) will be converted to (if t return f) when permissable to reduce the nesting depth and resulting indentation of code")
   parser.add_argument("--constant_folding", action="store_true", help="any arithmetic containing only constants will be replaced with the value of that expression")
   parser.add_argument("--simplify_conditions", action="store_true", help="boolean conditions will be simplified when it is permissable; see docs/ai_notes.txt for some warnings about this flag")
+  parser.add_argument("--handwritten", action="store_true", help="use this for handwritten scripts if they don't seem to decompile well without it; see docs/ai_notes.txt for more details")
 
   # Print version
   parser.add_argument("--version", action="version", version='%(prog)s - Version 1.0')
@@ -532,7 +533,7 @@ class ABST():
 
 
   # build a ABST from a list of blocks
-  def __init__(self, block_list, procedure_info, special_labels):
+  def __init__(self, block_list, procedure_info, special_labels, handwritten):
     self.var_count = 0
     self.block_nodes = []
     self.block_used = []
@@ -616,7 +617,8 @@ class ABST():
     self.handle_special_labels()
     self.handle_directed_cycles()
     self.clear_single_gotos()
-    self.handle_undirected_cycles()
+    if not handwritten:
+      self.handle_undirected_cycles()
 
     self.clean_loops()
     self.clean_empty_blocks()
@@ -1669,7 +1671,7 @@ def decompile_ai_main():
   #output +=  "\n\n".join(map(str, basic_blocks))
   #print output
     
-  tree = ABST(basic_blocks, proc_info, special_labels)
+  tree = ABST(basic_blocks, proc_info, special_labels, args.handwritten)
   #print str( tree )
 
   if args.fully_optimize:

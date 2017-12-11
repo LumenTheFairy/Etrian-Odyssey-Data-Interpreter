@@ -87,3 +87,21 @@ expression is incorrect (because native function argument counts were guessed in
 incorrect unknown function is hidden away, and you can't tell if it was a legitamite reduction or
 not. Thus, this optimization is only recommended for very simple scrips, or scripts in which the
 native functions are known, or at least have accurate argument counts.
+
+
+Decompiling handwritten scripts:
+
+Handwritten scripts may (rightfully) have structures that an actual non-optimizing compiler would
+never emit. Passing the --handwritten flag to the decompiler will tell the decompiler to handle
+these structures at the expense of some code compactness. Specifically, the decompiler will simply
+duplicate shared code into every coditional branch that uses it. As such, you should only use this
+flag on scripts that are having trouble decompiling without it (crashing or giving weird results.)
+This also means it is actually possible for code to contain the same goto label in two or more
+different places, but this is okay because jumping to any of them will produce the same result.
+
+A note on label naming: the decompiler guesses that any label in the script file that does not
+start with an underscore is to be used as a goto label in the code. Thus, it is somewhat important
+for handwritten scripts to continue placing underscores at the start of labels when giving
+meaningful names, or else there may be strange goto's and labels in the resulting code. On the other
+hand, creating a label without a leading underscore signals to the decompiler that there should be
+a goto, which might be what you want.

@@ -122,7 +122,7 @@ if __name__ == '__main__':
             
             self.flow = unpack_ai.Flow_File(os.path.join(subdir, filename))
             self.basic_blocks, self.proc_info, self.special_labels = decompile_ai.abstract_flow(self.flow)
-            self.abst = decompile_ai.ABST(self.basic_blocks, self.proc_info, self.special_labels)
+            self.abst = decompile_ai.ABST(self.basic_blocks, self.proc_info, self.special_labels, False)
             if args.fully_optimize:
               self.abst.optimize_abst()
             else:
