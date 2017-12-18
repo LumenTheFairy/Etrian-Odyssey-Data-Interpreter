@@ -298,6 +298,13 @@ class Flow_Block_Graph():
                 if instr.opcode in jumpers:
                     if instr.operand not in outs:
                         outs.append(instr.operand)
+            # if the last instruction is an IF, we need to add the following block as well
+            if len(block.instructions) > 0 and block.instructions[-1].opcode == 0x1C:
+                loc = block.instructions[-1].loc + 1
+                for idx, label in enumerate(labels):
+                    if label.loc == loc:
+                        outs.append(idx)
+                        break
             return set(outs)
 
         # having only one block is an easy special case

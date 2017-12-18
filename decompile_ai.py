@@ -1153,45 +1153,50 @@ class ABST():
       return len(block.children) == 0
 
     # go through each block and remove statements as necessary
-    for block in self.block_nodes:
-      for idx, stmt in enumerate( map(in_node, block.children) ):
-        # goto to empty block can just be removed
-        if stmt.tag == "goto":
-          dest = stmt.vals[0]
-          if block_is_empty( dest ):
-            del block.children[idx]
-            self.block_used[dest] = False
-        # there are a few cases for ifs depending on how many branches
-        # there are, and how many/which are empty
-        # this pass is run before elif blocks can be created, so there
-        # are at most two branches
-        elif stmt.tag == "if":
-          # no else case
-          if len(stmt.vals) == 1:
+    has_changes = True
+    while has_changes:
+      has_changes = False
+      for block in self.block_nodes:
+        for idx, stmt in enumerate( map(in_node, block.children) ):
+          # goto to empty block can just be removed
+          if stmt.tag == "goto":
             dest = stmt.vals[0]
             if block_is_empty( dest ):
               del block.children[idx]
+              has_changes = True
               self.block_used[dest] = False
-          else:
-            # note that if both blocks are empty, it is not necessarily safe to
-            # remove the whole if stmt because the condition may have side-effects
-            t_block = stmt.vals[0]
-            f_block = stmt.vals[1]
-            # if f_block is empty, just remove it
-            if block_is_empty(f_block):
+          # there are a few cases for ifs depending on how many branches
+          # there are, and how many/which are empty
+          # this pass is run before elif blocks can be created, so there
+          # are at most two branches
+          elif stmt.tag == "if":
+            # no else case
+            if len(stmt.vals) == 1:
+              dest = stmt.vals[0]
+              if block_is_empty( dest ):
+                del block.children[idx]
+                has_changes = True
+                self.block_used[dest] = False
+            else:
+              # note that if both blocks are empty, it is not necessarily safe to
+              # remove the whole if stmt because the condition may have side-effects
+              t_block = stmt.vals[0]
+              f_block = stmt.vals[1]
+              # if f_block is empty, just remove it
+              if block_is_empty(f_block):
+                stmt.vals.pop()
+                self.block_used[f_block] = False
+              # if t_block is empty, flip the condition and remove the now false block
+              elif block_is_empty(t_block):
+                stmt.children[0] = negate_bool( stmt.children[0] )
+                stmt.vals.pop(0)
+                self.block_used[t_block] = False
+          # loops with empty updates can drop the update step
+          elif stmt.tag == "loop" and len(stmt.vals) == 3:
+            u_block = stmt.vals[2]
+            if block_is_empty(u_block):
               stmt.vals.pop()
-              self.block_used[f_block] = False
-            # if t_block is empty, flip the condition and remove the now false block
-            elif block_is_empty(t_block):
-              stmt.children[0] = negate_bool( stmt.children[0] )
-              stmt.vals.pop(0)
-              self.block_used[t_block] = False
-        # loops with empty updates can drop the update step
-        elif stmt.tag == "loop" and len(stmt.vals) == 3:
-          u_block = stmt.vals[2]
-          if block_is_empty(u_block):
-            stmt.vals.pop()
-            self.block_used[u_block] = False
+              self.block_used[u_block] = False
  
   # flatten the branch structure of the tree by converting
   # if ... else (if ... else ...)   to
@@ -1496,6 +1501,7 @@ def abstract_flow(orig_flow):
           continue
         # we split the block, creating a basic block with what we have, and treating the remainder as a new flow block
         # the conditional jump at the end of the basic block goes to where it used to, and the new block
+        # however, we should NOT split if this is the last instruction in the original block
         if instr.opcode == 0x1C:  # IF
           operations.append( Operation(0x25, [new_id, instr.operand]) )   # COND
           block_index = block.label_index
@@ -1504,9 +1510,12 @@ def abstract_flow(orig_flow):
           else:
             basic_blocks[block_index] = Basic_Block(list(operations), block_index)
             found_new_block = True
-          operations = []
-          block.label_index = new_id
-          new_id += 1
+          if idx < len(block.instructions) - 1:
+            operations = []
+            block.label_index = new_id
+            new_id += 1
+          else:
+            found_new_block = False
         # we transform a COMM based on whether or not it returns a value
         elif instr.opcode == 0x08:  # COMM
           next_instr = block.instructions[idx + 1]
