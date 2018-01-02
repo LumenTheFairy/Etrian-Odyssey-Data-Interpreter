@@ -541,12 +541,13 @@ class ABST():
     self.inner_used = {}
     self.procedure_info = procedure_info
     self.procedure_map = dict( (p.block_num, p.name) for p in procedure_info)
+    self.procedure_pop_map = dict( (p.block_num, p.pops) for p in procedure_info)
     self.special_labels = special_labels
     self.special_blocks = set([])
     self.special_gotos = set([])
 
     # build the nodes for each block
-    for block in block_list:
+    for blocknum, block in enumerate(block_list):
       block_stmts = []
       var_stack = []
       
@@ -601,8 +602,11 @@ class ABST():
             create_node(name, oper.args, oper.pushes, oper.pops)
             found_name = True
   
-        # skip PROC operations, they do nothing
+        # if we see a PROC tag, we need to create variables for arguments if the procedure has them
         if oper.opcode == 0x07:   #PROC
+          if blocknum in self.procedure_pop_map:
+            for argnum in range(self.procedure_pop_map[blocknum]):
+              create_node("var", [-1 - argnum], 1, 0)
           found_name = True
 
         # any other opcodes are errors or unhandled
@@ -904,7 +908,10 @@ class ABST():
       return '\n'.join(lines2)
 
     def display_var_name(index):
-      return 'r' + str(index)
+      if index >= 0:
+        return 'r' + str(index)
+      else:
+        return 'p' + str(-1 - index)
 
     def display_native_name(index):
       if index in native_functions:
@@ -1030,7 +1037,8 @@ class ABST():
     # display each procedure
     proc_strs = []
     for proc in self.procedure_info:
-      proc_str = proc.name + ":\n"
+      args_strs = map(display_var_name, range(-1, -1 - proc.pops, -1))
+      proc_str = proc.name + "(" + ",".join(args_strs) + "):\n"
       proc_str += indent(display_stmt_node( b_node(proc.block_num) ))
       proc_str = unindent_labels(proc_str)
       proc_strs.append(proc_str)
@@ -1548,14 +1556,23 @@ def abstract_flow(orig_flow):
     block = basic_blocks[proc.block_num]
     proc.pops = 0
     for oper in block.operations:
-      if oper.opcode in [0x05, 0x06] + assn_ops:  # POPs
+      if oper.opcode in [0x05, 0x06, 0x20, 0x21, 0x1c] + assn_ops:  # POPs 1 thing
         proc.pops += 1
+      elif oper.opcode == 0x07: #PROC
+        pass
+      elif oper.opcode in [0x23, 0x24]: #FUNC or SEND
+        if oper.pops is not None:
+          proc.pops += oper.pops
+        else:
+          eprint("An unknown native function begins a procedure. Cannot determine the number of arguments to the procedure.")
+          break
       else:
         break
     # TODO: assume a proc cannot return anything for now
     proc.pushes = 0
     
-  for block in basic_blocks:
+  procedure_pop_map = dict( (p.block_num, p.pops) for p in proc_info)
+  for block_num, block in enumerate(basic_blocks):
     def find_low_after(idx, height):
       lowest = height
       height += block.operations[idx].pushes
@@ -1566,6 +1583,8 @@ def abstract_flow(orig_flow):
         height += oper.pushes
       return lowest
     height = 0
+    if block_num in procedure_pop_map:
+      height = procedure_pop_map[block_num]
     for idx, oper in enumerate(block.operations):
       if oper.opcode == 0x0B:  # CALL
         for proc in proc_info:
